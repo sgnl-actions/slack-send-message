@@ -1,100 +1,215 @@
 /**
- * SGNL Job Template
+ * Slack Send Message Action
  *
- * This template provides a starting point for implementing SGNL jobs.
- * Replace this implementation with your specific business logic.
+ * Send a message to a Slack channel using either:
+ * - Webhook mode: Simple POST to webhook URL with just message text
+ * - API mode: Full Slack Web API with authentication and channel specification
  */
 
-export default {
+/**
+ * Send message via webhook mode
+ * @param {string} text - Message text to send
+ * @param {string} webhookUrl - Slack webhook URL
+ * @returns {Object} Response from webhook
+ */
+async function sendMessageViaWebhook(text, webhookUrl) {
+  const payload = { text };
+
+  const response = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Webhook request failed: ${response.status} ${response.statusText}`);
+  }
+
+  // Webhook returns plain text 'ok' on success
+  const responseText = await response.text();
+
+  return {
+    ok: responseText === 'ok',
+    text: responseText,
+    status: response.status
+  };
+}
+
+/**
+ * Send message via Slack Web API
+ * @param {string} text - Message text to send
+ * @param {string} channel - Channel name or ID
+ * @param {string} accessToken - Slack Bot OAuth token
+ * @param {string} apiUrl - Base Slack API URL
+ * @returns {Object} Response from Slack API
+ */
+async function sendMessageViaAPI(text, channel, accessToken, apiUrl) {
+  const url = new URL('/api/chat.postMessage', apiUrl);
+
+  const payload = {
+    text,
+    channel
+  };
+
+  const response = await fetch(url.toString(), {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Slack API request failed: ${response.status} ${response.statusText}`);
+  }
+
+  const result = await response.json();
+
+  // Check if Slack returned an error in the response body
+  if (!result.ok) {
+    throw new Error(`Slack API error: ${result.error || 'Unknown error'}`);
+  }
+
+  return result;
+}
+
+const slackScript = {
   /**
-   * Main execution handler - implement your job logic here
-   * @param {Object} params - Job input parameters
-   * @param {Object} context - Execution context with env, secrets, outputs
-   * @returns {Object} Job results
+   * Main execution handler
+   * @param {Object} params - Input parameters
+   * @param {string} params.text - Message text to send
+   * @param {string} params.channel - Channel for API mode (ignored in webhook mode)
+   * @param {boolean} params.isWebhook - Use webhook mode if true, API mode if false
+   * @param {Object} context - Execution context
+   * @returns {Object} Execution results
    */
   invoke: async (params, context) => {
-    console.log('Starting job execution');
-    console.log(`Processing target: ${params.target}`);
-    console.log(`Action: ${params.action}`);
+    console.log('Starting Slack send message action');
 
-    // TODO: Replace with your implementation
-    const { target, action, options = [], dry_run = false } = params;
+    const { text, channel, isWebhook = false } = params;
 
-    if (dry_run) {
-      console.log('DRY RUN: No changes will be made');
+    // Validate required inputs
+    if (!text || text.trim().length === 0) {
+      throw new Error('text parameter is required and cannot be empty');
     }
 
-    // Access environment variables
-    const environment = context.env.ENVIRONMENT || 'development';
-    console.log(`Running in ${environment} environment`);
+    if (isWebhook) {
+      console.log('Using webhook mode');
 
-    // Access secrets securely (example)
-    if (context.secrets.API_KEY) {
-      console.log(`Using API key ending in ...${context.secrets.API_KEY.slice(-4)}`);
+      // Get webhook URL from environment
+      const webhookUrl = context.environment?.SLACK_WEBHOOK_URL;
+      if (!webhookUrl) {
+        throw new Error('SLACK_WEBHOOK_URL environment variable is required for webhook mode');
+      }
+
+      const result = await sendMessageViaWebhook(text, webhookUrl);
+
+      console.log(`Message sent via webhook. Status: ${result.status}`);
+
+      return {
+        status: 'success',
+        text: text,
+        ok: result.ok,
+        mode: 'webhook'
+      };
+    } else {
+      console.log('Using API mode');
+
+      // Validate channel is provided for API mode
+      if (!channel || channel.trim().length === 0) {
+        throw new Error('channel parameter is required for API mode');
+      }
+
+      // Get access token from secrets
+      const accessToken = context.secrets?.SLACK_ACCESS_TOKEN;
+      if (!accessToken) {
+        throw new Error('SLACK_ACCESS_TOKEN secret is required for API mode');
+      }
+
+      // Get API URL from environment (default to slack.com)
+      const apiUrl = context.environment?.SLACK_API_URL || 'https://slack.com';
+
+      const result = await sendMessageViaAPI(text, channel, accessToken, apiUrl);
+
+      console.log(`Message sent via API to channel ${channel}. Timestamp: ${result.ts}`);
+
+      return {
+        status: 'success',
+        text: text,
+        channel: channel,
+        ts: result.ts,
+        ok: result.ok,
+        mode: 'api'
+      };
     }
-
-    // Use outputs from previous jobs in workflow
-    if (context.outputs && Object.keys(context.outputs).length > 0) {
-      console.log(`Available outputs from ${Object.keys(context.outputs).length} previous jobs`);
-      console.log(`Previous job outputs: ${Object.keys(context.outputs).join(', ')}`);
-    }
-
-    // TODO: Implement your business logic here
-    console.log(`Performing ${action} on ${target}...`);
-
-    if (options.length > 0) {
-      console.log(`Processing ${options.length} options: ${options.join(', ')}`);
-    }
-
-    console.log(`Successfully completed ${action} on ${target}`);
-
-    // Return structured results
-    return {
-      status: dry_run ? 'dry_run_completed' : 'success',
-      target: target,
-      action: action,
-      options_processed: options.length,
-      environment: environment,
-      processed_at: new Date().toISOString()
-      // Job completed successfully
-    };
   },
 
   /**
-   * Error recovery handler - implement error handling logic
+   * Error recovery handler
    * @param {Object} params - Original params plus error information
    * @param {Object} context - Execution context
    * @returns {Object} Recovery results
    */
-  error: async (params, _context) => {
-    const { error, target } = params;
-    console.error(`Job encountered error while processing ${target}: ${error.message}`);
+  error: async (params, context) => {
+    const { error } = params;
+    console.error(`Slack send message error: ${error.message}`);
 
-    // TODO: Implement your error recovery logic
-    // Example: Check if error is retryable and attempt recovery
+    // Check for retryable errors
+    if (error.message.includes('429')) {
+      console.log('Rate limited, waiting before retry');
+      await new Promise(resolve => setTimeout(resolve, 5000));
 
-    // For now, just throw the error - implement your logic here
-    throw new Error(`Unable to recover from error: ${error.message}`);
+      // Attempt recovery by retrying the original operation
+      try {
+        return await slackScript.invoke(params, context);
+      } catch (retryError) {
+        console.error(`Retry failed: ${retryError.message}`);
+        throw new Error(`Failed after retry: ${retryError.message}`);
+      }
+    }
+
+    // Check for server errors that might be transient
+    if (error.message.includes('502') ||
+        error.message.includes('503') ||
+        error.message.includes('504')) {
+      console.log('Server error detected, marking as retryable');
+      return { status: 'retry_requested' };
+    }
+
+    // Fatal errors (authentication, validation, etc.)
+    if (error.message.includes('401') ||
+        error.message.includes('403') ||
+        error.message.includes('invalid_auth') ||
+        error.message.includes('channel_not_found') ||
+        error.message.includes('is required')) {
+      console.error('Fatal error, will not retry');
+      throw error;
+    }
+
+    // Default: let framework handle retry
+    return { status: 'retry_requested' };
   },
 
   /**
-   * Graceful shutdown handler - implement cleanup logic
+   * Graceful shutdown handler
    * @param {Object} params - Original params plus halt reason
    * @param {Object} context - Execution context
    * @returns {Object} Cleanup results
    */
   halt: async (params, _context) => {
-    const { reason, target } = params;
-    console.log(`Job is being halted (${reason}) while processing ${target}`);
+    const { reason } = params;
+    console.log(`Slack send message action halted: ${reason}`);
 
-    // TODO: Implement your cleanup logic
-    // Example: Save partial results, close connections, etc.
-
+    // No cleanup needed for Slack messaging
     return {
       status: 'halted',
-      target: target || 'unknown',
       reason: reason,
       halted_at: new Date().toISOString()
     };
   }
 };
+
+export default slackScript;

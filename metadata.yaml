@@ -1,37 +1,45 @@
-name: job-template
-description: Template for SGNL JavaScript jobs - replace with your job description
+name: slack-send-message
+description: Send a message to a Slack channel via API or webhook
 
 # Input parameters for web form generation
 inputs:
-  target:
+  text:
     type: text
-    description: Target resource identifier (e.g., user email, group ID)
+    description: Message text to send to Slack channel
     required: true
+    validation:
+      min: 1
+      max: 4000
+
+  channel:
+    type: text
+    description: Slack channel name or ID (required for API mode, ignored for webhook mode)
+    required: false
     validation:
       min: 1
       max: 100
 
-  action:
-    type: text
-    description: Action to perform on the target resource
-    required: true
-    validation:
-      min: 1
-      max: 50
-
-  options:
-    type: array
-    description: Additional options for the operation
-    required: false
-    item_type: text
-    validation:
-      max: 10
-
-  dry_run:
+  isWebhook:
     type: boolean
-    description: Preview changes without executing them
+    description: Use webhook mode instead of API mode
     required: false
     default: false
+
+# Required secrets (varies by mode)
+secrets:
+  SLACK_ACCESS_TOKEN:
+    description: Slack Bot User OAuth Access Token (required for API mode)
+    required: false
+
+# Environment variables
+environment:
+  SLACK_API_URL:
+    description: Base URL for Slack API (defaults to https://slack.com)
+    default: https://slack.com
+
+  SLACK_WEBHOOK_URL:
+    description: Slack webhook URL (required for webhook mode)
+    required: false
 
 # Expected output structure
 outputs:
@@ -39,10 +47,18 @@ outputs:
     type: text
     description: Operation result (success, failed, recovered, etc.)
 
-  target:
+  text:
     type: text
-    description: The target resource that was processed
+    description: The message text that was sent
 
-  processed_at:
-    type: datetime
-    description: When the operation completed (ISO 8601)
+  channel:
+    type: text
+    description: The channel where the message was sent (API mode only)
+
+  ts:
+    type: text
+    description: Message timestamp returned by Slack (API mode only)
+
+  ok:
+    type: boolean
+    description: Whether the Slack API response was successful
