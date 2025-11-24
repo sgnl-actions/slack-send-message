@@ -86,7 +86,7 @@ describe('Slack Send Message Script', () => {
         SLACK_API_URL: 'https://slack.com'
       },
       secrets: {
-        SLACK_ACCESS_TOKEN: 'xoxb-test-token-fake'
+        BEARER_AUTH_TOKEN: 'xoxb-test-token-fake'
       },
       outputs: {}
     };
@@ -142,7 +142,7 @@ describe('Slack Send Message Script', () => {
       const contextWithoutApiUrl = {
         environment: {},
         secrets: {
-          SLACK_ACCESS_TOKEN: 'xoxb-test'
+          BEARER_AUTH_TOKEN: 'xoxb-test'
         }
       };
 
@@ -185,7 +185,7 @@ describe('Slack Send Message Script', () => {
       };
 
       await expect(script.invoke(params, contextWithoutToken))
-        .rejects.toThrow('SLACK_ACCESS_TOKEN secret is required for API mode');
+        .rejects.toThrow('BEARER_AUTH_TOKEN secret is required for API mode');
     });
 
     test('should throw error if API request fails', async () => {
@@ -226,7 +226,7 @@ describe('Slack Send Message Script', () => {
   describe('input validation', () => {
     const mockContext = {
       environment: { SLACK_WEBHOOK_URL: 'https://hooks.slack.com/test' },
-      secrets: { SLACK_ACCESS_TOKEN: 'xoxb-test' }
+      secrets: { BEARER_AUTH_TOKEN: 'xoxb-test' }
     };
 
     test('should throw error if text is missing', async () => {
@@ -273,7 +273,7 @@ describe('Slack Send Message Script', () => {
   describe('error handler', () => {
     const mockContext = {
       environment: { SLACK_WEBHOOK_URL: 'https://hooks.slack.com/test' },
-      secrets: { SLACK_ACCESS_TOKEN: 'xoxb-test' }
+      secrets: { BEARER_AUTH_TOKEN: 'xoxb-test' }
     };
 
     test('should retry on rate limit (429) and recover', async () => {

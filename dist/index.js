@@ -127,9 +127,9 @@ const slackScript = {
       }
 
       // Get access token from secrets
-      const accessToken = context.secrets?.SLACK_ACCESS_TOKEN;
+      const accessToken = context.secrets?.BEARER_AUTH_TOKEN;
       if (!accessToken) {
-        throw new Error('SLACK_ACCESS_TOKEN secret is required for API mode');
+        throw new Error('BEARER_AUTH_TOKEN secret is required for API mode');
       }
 
       // Get API URL from environment (default to slack.com)

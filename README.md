@@ -32,7 +32,7 @@ This action supports two operating modes:
 - `SLACK_WEBHOOK_URL` (required for webhook mode): Full webhook URL from Slack
 
 ### Secrets
-- `SLACK_ACCESS_TOKEN` (required for API mode): Bot OAuth token (e.g., `xoxb-...`)
+- `BEARER_AUTH_TOKEN` (required for API mode): Bot OAuth token (e.g., `xoxb-...`)
 
 ## Usage Examples
 
@@ -63,7 +63,7 @@ This action supports two operating modes:
     "SLACK_API_URL": "https://slack.com"
   },
   "secrets": {
-    "SLACK_ACCESS_TOKEN": "xoxb-your-bot-token"
+    "BEARER_AUTH_TOKEN": "xoxb-your-bot-token"
   }
 }
 ```
@@ -136,7 +136,7 @@ npm run dev -- --params '{"text":"Test message","isWebhook":true}'
 npm run dev -- --params '{"text":"Hello webhook!","isWebhook":true}' --env '{"SLACK_WEBHOOK_URL":"https://hooks.slack.com/services/..."}'
 
 # Test API mode  
-npm run dev -- --params '{"text":"Hello API!","channel":"#test"}' --secrets '{"SLACK_ACCESS_TOKEN":"xoxb-..."}'
+npm run dev -- --params '{"text":"Hello API!","channel":"#test"}' --secrets '{"BEARER_AUTH_TOKEN":"xoxb-..."}'
 ```
 
 ## Troubleshooting
@@ -177,5 +177,5 @@ npm run dev -- --params '{"text":"Hello API!","channel":"#test"}' --secrets '{"S
 3. Go to "OAuth & Permissions"
 4. Add `chat:write` scope under Bot Token Scopes
 5. Install app to workspace
-6. Copy "Bot User OAuth Token" for use in `SLACK_ACCESS_TOKEN`
+6. Copy "Bot User OAuth Token" for use in `BEARER_AUTH_TOKEN`
 7. Invite bot to channels where it should post messages
