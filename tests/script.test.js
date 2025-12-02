@@ -10,7 +10,7 @@ describe('Slack Send Message Script', () => {
   describe('invoke handler - Webhook Mode', () => {
     const webhookContext = {
       environment: {
-        SLACK_WEBHOOK_URL: 'https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX'
+        ADDRESS: 'https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX'
       },
       secrets: {},
       outputs: {}
@@ -31,7 +31,7 @@ describe('Slack Send Message Script', () => {
       const result = await script.invoke(params, webhookContext);
 
       expect(fetch).toHaveBeenCalledWith(
-        webhookContext.environment.SLACK_WEBHOOK_URL,
+        webhookContext.environment.ADDRESS,
         {
           method: 'POST',
           headers: {
@@ -60,7 +60,7 @@ describe('Slack Send Message Script', () => {
       };
 
       await expect(script.invoke(params, contextWithoutWebhookUrl))
-        .rejects.toThrow('SLACK_WEBHOOK_URL environment variable is required for webhook mode');
+        .rejects.toThrow('No URL specified. Provide address parameter or ADDRESS environment variable');
     });
 
     test('should throw error if webhook request fails', async () => {
@@ -83,7 +83,7 @@ describe('Slack Send Message Script', () => {
   describe('invoke handler - API Mode', () => {
     const apiContext = {
       environment: {
-        SLACK_API_URL: 'https://slack.com'
+        ADDRESS: 'https://slack.com'
       },
       secrets: {
         BEARER_AUTH_TOKEN: 'xoxb-test-token-fake'
@@ -133,34 +133,6 @@ describe('Slack Send Message Script', () => {
       expect(result.mode).toBe('api');
     });
 
-    test('should use default API URL when not specified', async () => {
-      const params = {
-        text: 'Hello!',
-        channel: '#test'
-      };
-
-      const contextWithoutApiUrl = {
-        environment: {},
-        secrets: {
-          BEARER_AUTH_TOKEN: 'xoxb-test'
-        }
-      };
-
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: jest.fn().mockResolvedValue({
-          ok: true,
-          ts: '123456789.123'
-        })
-      });
-
-      await script.invoke(params, contextWithoutApiUrl);
-
-      expect(fetch).toHaveBeenCalledWith(
-        'https://slack.com/api/chat.postMessage',
-        expect.any(Object)
-      );
-    });
 
     test('should throw error if channel is missing in API mode', async () => {
       const params = {
@@ -185,7 +157,7 @@ describe('Slack Send Message Script', () => {
       };
 
       await expect(script.invoke(params, contextWithoutToken))
-        .rejects.toThrow('BEARER_AUTH_TOKEN secret is required for API mode');
+        .rejects.toThrow('No authentication configured');
     });
 
     test('should throw error if API request fails', async () => {
@@ -225,7 +197,7 @@ describe('Slack Send Message Script', () => {
 
   describe('input validation', () => {
     const mockContext = {
-      environment: { SLACK_WEBHOOK_URL: 'https://hooks.slack.com/test' },
+      environment: { ADDRESS: 'https://slack.com' },
       secrets: { BEARER_AUTH_TOKEN: 'xoxb-test' }
     };
 
@@ -272,97 +244,20 @@ describe('Slack Send Message Script', () => {
 
   describe('error handler', () => {
     const mockContext = {
-      environment: { SLACK_WEBHOOK_URL: 'https://hooks.slack.com/test' },
+      environment: { ADDRESS: 'https://slack.com' },
       secrets: { BEARER_AUTH_TOKEN: 'xoxb-test' }
     };
 
-    test('should retry on rate limit (429) and recover', async () => {
+    test('should re-throw error for framework to handle', async () => {
+      const error = new Error('Network timeout');
+      error.statusCode = 500;
+
       const params = {
         text: 'Hello!',
-        isWebhook: true,
-        error: {
-          message: 'Rate limited: 429'
-        }
+        error: error
       };
 
-      // Mock setTimeout to avoid actual delay in tests
-      jest.spyOn(global, 'setTimeout').mockImplementation((callback) => {
-        callback();
-        return 1;
-      });
-
-      // Mock successful retry
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: jest.fn().mockResolvedValue('ok')
-      });
-
-      const result = await script.error(params, mockContext);
-
-      expect(result.status).toBe('success');
-      expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), 5000);
-
-      // Cleanup
-      setTimeout.mockRestore();
-    });
-
-    test('should mark server errors as retryable', async () => {
-      const params = {
-        error: {
-          message: 'Server error: 503 Service Unavailable'
-        }
-      };
-
-      const result = await script.error(params, mockContext);
-      expect(result.status).toBe('retry_requested');
-    });
-
-    test('should throw fatal errors', async () => {
-      const params = {
-        error: {
-          message: 'Authentication failed: 401 Unauthorized'
-        }
-      };
-
-      let thrownError;
-      try {
-        await script.error(params, mockContext);
-      } catch (error) {
-        thrownError = error;
-      }
-
-      expect(thrownError).toBeDefined();
-      expect(thrownError.message).toContain('Authentication failed: 401 Unauthorized');
-    });
-
-    test('should throw validation errors as fatal', async () => {
-      const params = {
-        error: {
-          message: 'channel_not_found: Channel does not exist'
-        }
-      };
-
-      let thrownError;
-      try {
-        await script.error(params, mockContext);
-      } catch (error) {
-        thrownError = error;
-      }
-
-      expect(thrownError).toBeDefined();
-      expect(thrownError.message).toContain('channel_not_found');
-    });
-
-    test('should request retry for unknown errors', async () => {
-      const params = {
-        error: {
-          message: 'Unknown network error'
-        }
-      };
-
-      const result = await script.error(params, mockContext);
-      expect(result.status).toBe('retry_requested');
+      await expect(script.error(params, mockContext)).rejects.toThrow('Network timeout');
     });
   });
 

@@ -2,12 +2,169 @@
 'use strict';
 
 /**
+ * SGNL Actions - Authentication Utilities
+ *
+ * Shared authentication utilities for SGNL actions.
+ * Supports: Bearer Token, Basic Auth, OAuth2 Client Credentials, OAuth2 Authorization Code
+ */
+
+/**
+ * Get OAuth2 access token using client credentials flow
+ * @param {Object} config - OAuth2 configuration
+ * @param {string} config.tokenUrl - Token endpoint URL
+ * @param {string} config.clientId - Client ID
+ * @param {string} config.clientSecret - Client secret
+ * @param {string} [config.scope] - OAuth2 scope
+ * @param {string} [config.audience] - OAuth2 audience
+ * @param {string} [config.authStyle] - Auth style: 'InParams' or 'InHeader' (default)
+ * @returns {Promise<string>} Access token
+ */
+async function getClientCredentialsToken(config) {
+  const { tokenUrl, clientId, clientSecret, scope, audience, authStyle } = config;
+
+  if (!tokenUrl || !clientId || !clientSecret) {
+    throw new Error('OAuth2 Client Credentials flow requires tokenUrl, clientId, and clientSecret');
+  }
+
+  const params = new URLSearchParams();
+  params.append('grant_type', 'client_credentials');
+
+  if (scope) {
+    params.append('scope', scope);
+  }
+
+  if (audience) {
+    params.append('audience', audience);
+  }
+
+  const headers = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'Accept': 'application/json'
+  };
+
+  if (authStyle === 'InParams') {
+    params.append('client_id', clientId);
+    params.append('client_secret', clientSecret);
+  } else {
+    const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+    headers['Authorization'] = `Basic ${credentials}`;
+  }
+
+  const response = await fetch(tokenUrl, {
+    method: 'POST',
+    headers,
+    body: params.toString()
+  });
+
+  if (!response.ok) {
+    let errorText;
+    try {
+      const errorData = await response.json();
+      errorText = JSON.stringify(errorData);
+    } catch {
+      errorText = await response.text();
+    }
+    throw new Error(
+      `OAuth2 token request failed: ${response.status} ${response.statusText} - ${errorText}`
+    );
+  }
+
+  const data = await response.json();
+
+  if (!data.access_token) {
+    throw new Error('No access_token in OAuth2 response');
+  }
+
+  return data.access_token;
+}
+
+/**
+ * Get the Authorization header value from context using available auth method.
+ * Supports: Bearer Token, Basic Auth, OAuth2 Authorization Code, OAuth2 Client Credentials
+ *
+ * @param {Object} context - Execution context with environment and secrets
+ * @param {Object} context.environment - Environment variables
+ * @param {Object} context.secrets - Secret values
+ * @returns {Promise<string>} Authorization header value (e.g., "Bearer xxx" or "Basic xxx")
+ */
+async function getAuthorizationHeader(context) {
+  const env = context.environment || {};
+  const secrets = context.secrets || {};
+
+  // Method 1: Simple Bearer Token
+  if (secrets.BEARER_AUTH_TOKEN) {
+    const token = secrets.BEARER_AUTH_TOKEN;
+    return token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+  }
+
+  // Method 2: Basic Auth (username + password)
+  if (secrets.BASIC_PASSWORD && secrets.BASIC_USERNAME) {
+    const credentials = Buffer.from(`${secrets.BASIC_USERNAME}:${secrets.BASIC_PASSWORD}`).toString('base64');
+    return `Basic ${credentials}`;
+  }
+
+  // Method 3: OAuth2 Authorization Code - use pre-existing access token
+  if (secrets.OAUTH2_AUTHORIZATION_CODE_ACCESS_TOKEN) {
+    const token = secrets.OAUTH2_AUTHORIZATION_CODE_ACCESS_TOKEN;
+    return token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+  }
+
+  // Method 4: OAuth2 Client Credentials - fetch new token
+  if (secrets.OAUTH2_CLIENT_CREDENTIALS_CLIENT_SECRET) {
+    const tokenUrl = env.OAUTH2_CLIENT_CREDENTIALS_TOKEN_URL;
+    const clientId = env.OAUTH2_CLIENT_CREDENTIALS_CLIENT_ID;
+    const clientSecret = secrets.OAUTH2_CLIENT_CREDENTIALS_CLIENT_SECRET;
+
+    if (!tokenUrl || !clientId) {
+      throw new Error('OAuth2 Client Credentials flow requires TOKEN_URL and CLIENT_ID in env');
+    }
+
+    const token = await getClientCredentialsToken({
+      tokenUrl,
+      clientId,
+      clientSecret,
+      scope: env.OAUTH2_CLIENT_CREDENTIALS_SCOPE,
+      audience: env.OAUTH2_CLIENT_CREDENTIALS_AUDIENCE,
+      authStyle: env.OAUTH2_CLIENT_CREDENTIALS_AUTH_STYLE
+    });
+
+    return `Bearer ${token}`;
+  }
+
+  throw new Error(
+    'No authentication configured. Provide one of: ' +
+    'BEARER_AUTH_TOKEN, BASIC_USERNAME/BASIC_PASSWORD, ' +
+    'OAUTH2_AUTHORIZATION_CODE_ACCESS_TOKEN, or OAUTH2_CLIENT_CREDENTIALS_*'
+  );
+}
+
+/**
+ * Get the base URL/address for API calls
+ * @param {Object} params - Request parameters
+ * @param {string} [params.address] - Address from params
+ * @param {Object} context - Execution context
+ * @returns {string} Base URL
+ */
+function getBaseUrl(params, context) {
+  const env = context.environment || {};
+  const address = params?.address || env.ADDRESS;
+
+  if (!address) {
+    throw new Error('No URL specified. Provide address parameter or ADDRESS environment variable');
+  }
+
+  // Remove trailing slash if present
+  return address.endsWith('/') ? address.slice(0, -1) : address;
+}
+
+/**
  * Slack Send Message Action
  *
  * Send a message to a Slack channel using either:
  * - Webhook mode: Simple POST to webhook URL with just message text
  * - API mode: Full Slack Web API with authentication and channel specification
  */
+
 
 /**
  * Send message via webhook mode
@@ -44,11 +201,11 @@ async function sendMessageViaWebhook(text, webhookUrl) {
  * Send message via Slack Web API
  * @param {string} text - Message text to send
  * @param {string} channel - Channel name or ID
- * @param {string} accessToken - Slack Bot OAuth token
+ * @param {string} authHeader - Authorization header value
  * @param {string} apiUrl - Base Slack API URL
  * @returns {Object} Response from Slack API
  */
-async function sendMessageViaAPI(text, channel, accessToken, apiUrl) {
+async function sendMessageViaAPI(text, channel, authHeader, apiUrl) {
   const url = new URL('/api/chat.postMessage', apiUrl);
 
   const payload = {
@@ -59,7 +216,7 @@ async function sendMessageViaAPI(text, channel, accessToken, apiUrl) {
   const response = await fetch(url.toString(), {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${accessToken}`,
+      'Authorization': authHeader,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(payload)
@@ -83,11 +240,19 @@ const slackScript = {
   /**
    * Main execution handler
    * @param {Object} params - Input parameters
-   * @param {string} params.text - Message text to send
-   * @param {string} params.channel - Channel for API mode (ignored in webhook mode)
-   * @param {boolean} params.isWebhook - Use webhook mode if true, API mode if false
-   * @param {Object} context - Execution context
-   * @returns {Object} Execution results
+   * @param {string} params.text - Message text to send (required)
+   * @param {string} params.channel - Channel for API mode (optional for webhook mode, required for API mode)
+   * @param {boolean} params.isWebhook - Use webhook mode if true, API mode if false (optional)
+   * @param {string} params.address - Optional Slack API base URL
+   * @param {Object} context - Execution context with secrets and environment
+   * @param {string} context.environment.ADDRESS - Default Slack API base URL
+   *
+   * The configured auth type will determine which of the following environment variables and secrets are available
+   * @param {string} context.secrets.BEARER_AUTH_TOKEN
+   *
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_ACCESS_TOKEN
+   *
+   * @returns {Promise<Object>} Action result
    */
   invoke: async (params, context) => {
     console.log('Starting Slack send message action');
@@ -102,11 +267,8 @@ const slackScript = {
     if (isWebhook) {
       console.log('Using webhook mode');
 
-      // Get webhook URL from environment
-      const webhookUrl = context.environment?.SLACK_WEBHOOK_URL;
-      if (!webhookUrl) {
-        throw new Error('SLACK_WEBHOOK_URL environment variable is required for webhook mode');
-      }
+      // Get webhook URL (full URL for webhook mode)
+      const webhookUrl = getBaseUrl(params, context);
 
       const result = await sendMessageViaWebhook(text, webhookUrl);
 
@@ -126,16 +288,10 @@ const slackScript = {
         throw new Error('channel parameter is required for API mode');
       }
 
-      // Get access token from secrets
-      const accessToken = context.secrets?.BEARER_AUTH_TOKEN;
-      if (!accessToken) {
-        throw new Error('BEARER_AUTH_TOKEN secret is required for API mode');
-      }
+      const authHeader = await getAuthorizationHeader(context);
+      const apiUrl = getBaseUrl(params, context);
 
-      // Get API URL from environment (default to slack.com)
-      const apiUrl = context.environment?.SLACK_API_URL || 'https://slack.com';
-
-      const result = await sendMessageViaAPI(text, channel, accessToken, apiUrl);
+      const result = await sendMessageViaAPI(text, channel, authHeader, apiUrl);
 
       console.log(`Message sent via API to channel ${channel}. Timestamp: ${result.ts}`);
 
@@ -150,50 +306,9 @@ const slackScript = {
     }
   },
 
-  /**
-   * Error recovery handler
-   * @param {Object} params - Original params plus error information
-   * @param {Object} context - Execution context
-   * @returns {Object} Recovery results
-   */
-  error: async (params, context) => {
+  error: async (params, _context) => {
     const { error } = params;
-    console.error(`Slack send message error: ${error.message}`);
-
-    // Check for retryable errors
-    if (error.message.includes('429')) {
-      console.log('Rate limited, waiting before retry');
-      await new Promise(resolve => setTimeout(resolve, 5000));
-
-      // Attempt recovery by retrying the original operation
-      try {
-        return await slackScript.invoke(params, context);
-      } catch (retryError) {
-        console.error(`Retry failed: ${retryError.message}`);
-        throw new Error(`Failed after retry: ${retryError.message}`);
-      }
-    }
-
-    // Check for server errors that might be transient
-    if (error.message.includes('502') ||
-        error.message.includes('503') ||
-        error.message.includes('504')) {
-      console.log('Server error detected, marking as retryable');
-      return { status: 'retry_requested' };
-    }
-
-    // Fatal errors (authentication, validation, etc.)
-    if (error.message.includes('401') ||
-        error.message.includes('403') ||
-        error.message.includes('invalid_auth') ||
-        error.message.includes('channel_not_found') ||
-        error.message.includes('is required')) {
-      console.error('Fatal error, will not retry');
-      throw error;
-    }
-
-    // Default: let framework handle retry
-    return { status: 'retry_requested' };
+    throw error;
   },
 
   /**
