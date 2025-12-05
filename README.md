@@ -26,13 +26,13 @@ This action supports two operating modes:
 ### Optional Inputs
 - `channel` (string): Slack channel name or ID (required for API mode, ignored for webhook mode)
 - `isWebhook` (boolean): Set to `true` to use webhook mode, `false` for API mode (default: `false`)
+- `address` (string): Slack API base URL (e.g., https://slack.com). Defaults to https://slack.com
 
 ### Environment Variables
-- `SLACK_API_URL` (optional): Base URL for Slack API (defaults to `https://slack.com`)
-- `SLACK_WEBHOOK_URL` (required for webhook mode): Full webhook URL from Slack
+- `ADDRESS`: Base URL for Slack API in API mode (defaults to `https://slack.com`), or full webhook URL in webhook mode
 
 ### Secrets
-- `SLACK_ACCESS_TOKEN` (required for API mode): Bot OAuth token (e.g., `xoxb-...`)
+- `BEARER_AUTH_TOKEN` (required for API mode): Bot OAuth token (e.g., `xoxb-...`)
 
 ## Usage Examples
 
@@ -45,12 +45,12 @@ This action supports two operating modes:
     "isWebhook": true
   },
   "environment": {
-    "SLACK_WEBHOOK_URL": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXX"
+    "ADDRESS": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXX"
   }
 }
 ```
 
-### API Mode  
+### API Mode
 ```javascript
 // SGNL JobSpec for API mode
 {
@@ -60,10 +60,10 @@ This action supports two operating modes:
     "isWebhook": false
   },
   "environment": {
-    "SLACK_API_URL": "https://slack.com"
+    "ADDRESS": "https://slack.com"
   },
   "secrets": {
-    "SLACK_ACCESS_TOKEN": "xoxb-your-bot-token"
+    "BEARER_AUTH_TOKEN": "xoxb-your-bot-token"
   }
 }
 ```
@@ -133,10 +133,10 @@ npm run dev -- --params '{"text":"Test message","isWebhook":true}'
 
 ```bash
 # Test webhook mode
-npm run dev -- --params '{"text":"Hello webhook!","isWebhook":true}' --env '{"SLACK_WEBHOOK_URL":"https://hooks.slack.com/services/..."}'
+npm run dev -- --params '{"text":"Hello webhook!","isWebhook":true}' --env '{"ADDRESS":"https://hooks.slack.com/services/..."}'
 
 # Test API mode  
-npm run dev -- --params '{"text":"Hello API!","channel":"#test"}' --secrets '{"SLACK_ACCESS_TOKEN":"xoxb-..."}'
+npm run dev -- --params '{"text":"Hello API!","channel":"#test"}' --secrets '{"BEARER_AUTH_TOKEN":"xoxb-..."}'
 ```
 
 ## Troubleshooting
@@ -169,7 +169,7 @@ npm run dev -- --params '{"text":"Hello API!","channel":"#test"}' --secrets '{"S
 2. Navigate to "Incoming Webhooks"
 3. Click "Add New Webhook to Workspace"
 4. Select target channel and authorize
-5. Copy the webhook URL for use in `SLACK_WEBHOOK_URL`
+5. Copy the webhook URL for use in `ADDRESS` environment variable
 
 ### Creating a Bot Token
 1. Go to [Slack API Apps](https://api.slack.com/apps)
@@ -177,5 +177,5 @@ npm run dev -- --params '{"text":"Hello API!","channel":"#test"}' --secrets '{"S
 3. Go to "OAuth & Permissions"
 4. Add `chat:write` scope under Bot Token Scopes
 5. Install app to workspace
-6. Copy "Bot User OAuth Token" for use in `SLACK_ACCESS_TOKEN`
+6. Copy "Bot User OAuth Token" for use in `BEARER_AUTH_TOKEN`
 7. Invite bot to channels where it should post messages

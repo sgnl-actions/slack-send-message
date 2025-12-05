@@ -6,6 +6,8 @@
  * - API mode: Full Slack Web API with authentication and channel specification
  */
 
+import { getBaseUrl, getAuthorizationHeader } from '@sgnl-actions/utils';
+
 /**
  * Send message via webhook mode
  * @param {string} text - Message text to send
@@ -41,11 +43,11 @@ async function sendMessageViaWebhook(text, webhookUrl) {
  * Send message via Slack Web API
  * @param {string} text - Message text to send
  * @param {string} channel - Channel name or ID
- * @param {string} accessToken - Slack Bot OAuth token
+ * @param {string} authHeader - Authorization header value
  * @param {string} apiUrl - Base Slack API URL
  * @returns {Object} Response from Slack API
  */
-async function sendMessageViaAPI(text, channel, accessToken, apiUrl) {
+async function sendMessageViaAPI(text, channel, authHeader, apiUrl) {
   const url = new URL('/api/chat.postMessage', apiUrl);
 
   const payload = {
@@ -56,7 +58,7 @@ async function sendMessageViaAPI(text, channel, accessToken, apiUrl) {
   const response = await fetch(url.toString(), {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${accessToken}`,
+      'Authorization': authHeader,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(payload)
@@ -80,11 +82,19 @@ const slackScript = {
   /**
    * Main execution handler
    * @param {Object} params - Input parameters
-   * @param {string} params.text - Message text to send
-   * @param {string} params.channel - Channel for API mode (ignored in webhook mode)
-   * @param {boolean} params.isWebhook - Use webhook mode if true, API mode if false
-   * @param {Object} context - Execution context
-   * @returns {Object} Execution results
+   * @param {string} params.text - Message text to send (required)
+   * @param {string} params.channel - Channel for API mode (optional for webhook mode, required for API mode)
+   * @param {boolean} params.isWebhook - Use webhook mode if true, API mode if false (optional)
+   * @param {string} params.address - Optional Slack API base URL
+   * @param {Object} context - Execution context with secrets and environment
+   * @param {string} context.environment.ADDRESS - Default Slack API base URL
+   *
+   * The configured auth type will determine which of the following environment variables and secrets are available
+   * @param {string} context.secrets.BEARER_AUTH_TOKEN
+   *
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_ACCESS_TOKEN
+   *
+   * @returns {Promise<Object>} Action result
    */
   invoke: async (params, context) => {
     console.log('Starting Slack send message action');
@@ -99,11 +109,8 @@ const slackScript = {
     if (isWebhook) {
       console.log('Using webhook mode');
 
-      // Get webhook URL from environment
-      const webhookUrl = context.environment?.SLACK_WEBHOOK_URL;
-      if (!webhookUrl) {
-        throw new Error('SLACK_WEBHOOK_URL environment variable is required for webhook mode');
-      }
+      // Get webhook URL (full URL for webhook mode)
+      const webhookUrl = getBaseUrl(params, context);
 
       const result = await sendMessageViaWebhook(text, webhookUrl);
 
@@ -123,16 +130,10 @@ const slackScript = {
         throw new Error('channel parameter is required for API mode');
       }
 
-      // Get access token from secrets
-      const accessToken = context.secrets?.SLACK_ACCESS_TOKEN;
-      if (!accessToken) {
-        throw new Error('SLACK_ACCESS_TOKEN secret is required for API mode');
-      }
+      const authHeader = await getAuthorizationHeader(context);
+      const apiUrl = getBaseUrl(params, context);
 
-      // Get API URL from environment (default to slack.com)
-      const apiUrl = context.environment?.SLACK_API_URL || 'https://slack.com';
-
-      const result = await sendMessageViaAPI(text, channel, accessToken, apiUrl);
+      const result = await sendMessageViaAPI(text, channel, authHeader, apiUrl);
 
       console.log(`Message sent via API to channel ${channel}. Timestamp: ${result.ts}`);
 
@@ -147,50 +148,9 @@ const slackScript = {
     }
   },
 
-  /**
-   * Error recovery handler
-   * @param {Object} params - Original params plus error information
-   * @param {Object} context - Execution context
-   * @returns {Object} Recovery results
-   */
-  error: async (params, context) => {
+  error: async (params, _context) => {
     const { error } = params;
-    console.error(`Slack send message error: ${error.message}`);
-
-    // Check for retryable errors
-    if (error.message.includes('429')) {
-      console.log('Rate limited, waiting before retry');
-      await new Promise(resolve => setTimeout(resolve, 5000));
-
-      // Attempt recovery by retrying the original operation
-      try {
-        return await slackScript.invoke(params, context);
-      } catch (retryError) {
-        console.error(`Retry failed: ${retryError.message}`);
-        throw new Error(`Failed after retry: ${retryError.message}`);
-      }
-    }
-
-    // Check for server errors that might be transient
-    if (error.message.includes('502') ||
-        error.message.includes('503') ||
-        error.message.includes('504')) {
-      console.log('Server error detected, marking as retryable');
-      return { status: 'retry_requested' };
-    }
-
-    // Fatal errors (authentication, validation, etc.)
-    if (error.message.includes('401') ||
-        error.message.includes('403') ||
-        error.message.includes('invalid_auth') ||
-        error.message.includes('channel_not_found') ||
-        error.message.includes('is required')) {
-      console.error('Fatal error, will not retry');
-      throw error;
-    }
-
-    // Default: let framework handle retry
-    return { status: 'retry_requested' };
+    throw error;
   },
 
   /**
