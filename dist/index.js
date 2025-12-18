@@ -486,14 +486,14 @@ async function sendMessageViaWebhook(text, webhookUrl) {
  * @returns {Object} Response from Slack API
  */
 async function sendMessageViaAPI(text, channel, authHeader, apiUrl) {
-  const url = new URL('/api/chat.postMessage', apiUrl);
+  const url = `${apiUrl}/api/chat.postMessage`;
 
   const payload = {
     text,
     channel
   };
 
-  const response = await fetch(url.toString(), {
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Authorization': authHeader,
