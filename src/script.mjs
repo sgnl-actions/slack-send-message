@@ -6,7 +6,7 @@
  * - API mode: Full Slack Web API with authentication and channel specification
  */
 
-import { getBaseURL, getAuthorizationHeader, resolveJSONPathTemplates} from '@sgnl-actions/utils';
+import { getBaseURL, getAuthorizationHeader} from '@sgnl-actions/utils';
 
 /**
  * Send message via webhook mode
@@ -99,15 +99,7 @@ const slackScript = {
   invoke: async (params, context) => {
     console.log('Starting Slack send message action');
 
-    const jobContext = context.data || {};
-
-    // Resolve JSONPath templates in params
-    const { result: resolvedParams, errors } = resolveJSONPathTemplates(params, jobContext);
-    if (errors.length > 0) {
-     console.warn('Template resolution errors:', errors);
-    }
-
-    const { text, channel, isWebhook = false } = resolvedParams;
+    const { text, channel, isWebhook = false } = params;
 
     // Validate required inputs
     if (!text || text.trim().length === 0) {
@@ -118,7 +110,7 @@ const slackScript = {
       console.log('Using webhook mode');
 
       // Get webhook URL (full URL for webhook mode)
-      const webhookUrl = getBaseURL(resolvedParams, context);
+      const webhookUrl = getBaseURL(params, context);
 
       const result = await sendMessageViaWebhook(text, webhookUrl);
 
@@ -139,7 +131,7 @@ const slackScript = {
       }
 
       const authHeader = await getAuthorizationHeader(context);
-      const apiUrl = getBaseURL(resolvedParams, context);
+      const apiUrl = getBaseURL(params, context);
 
       const result = await sendMessageViaAPI(text, channel, authHeader, apiUrl);
 
