@@ -6,7 +6,7 @@
  * - API mode: Full Slack Web API with authentication and channel specification
  */
 
-import { getBaseURL, getAuthorizationHeader} from '@sgnl-actions/utils';
+import { getBaseURL, getAuthorizationHeader } from '@sgnl-actions/utils';
 
 /**
  * Send message via webhook mode
