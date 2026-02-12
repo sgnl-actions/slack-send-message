@@ -6,7 +6,7 @@
  * - API mode: Full Slack Web API with authentication and channel specification
  */
 
-import { getBaseURL, getAuthorizationHeader} from '@sgnl-actions/utils';
+import { getBaseURL, getAuthorizationHeader, SGNL_USER_AGENT} from '@sgnl-actions/utils';
 
 /**
  * Send message via webhook mode
@@ -20,7 +20,8 @@ async function sendMessageViaWebhook(text, webhookUrl) {
   const response = await fetch(webhookUrl, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'User-Agent': SGNL_USER_AGENT
     },
     body: JSON.stringify(payload)
   });
@@ -59,7 +60,8 @@ async function sendMessageViaAPI(text, channel, authHeader, apiUrl) {
     method: 'POST',
     headers: {
       'Authorization': authHeader,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'User-Agent': SGNL_USER_AGENT
     },
     body: JSON.stringify(payload)
   });
