@@ -1,5 +1,6 @@
 import script from '../src/script.mjs';
 import { jest } from '@jest/globals';
+import { SGNL_USER_AGENT } from '@sgnl-actions/utils';
 
 describe('Slack Send Message Script', () => {
   beforeEach(() => {
@@ -35,7 +36,8 @@ describe('Slack Send Message Script', () => {
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'User-Agent': SGNL_USER_AGENT
           },
           body: JSON.stringify({ text: 'Hello from webhook!' })
         }
@@ -116,7 +118,8 @@ describe('Slack Send Message Script', () => {
           method: 'POST',
           headers: {
             'Authorization': 'Bearer xoxb-test-token-fake',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'User-Agent': SGNL_USER_AGENT
           },
           body: JSON.stringify({
             text: 'Hello from API!',
