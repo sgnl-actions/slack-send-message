@@ -80,7 +80,7 @@ async function sendMessageViaAPI(text, channel, authHeader, apiUrl) {
   return result;
 }
 
-const slackScript = {
+export default {
   /**
    * Main execution handler
    * @param {Object} params - Input parameters
@@ -173,5 +173,3 @@ const slackScript = {
     };
   }
 };
-
-export default slackScript;

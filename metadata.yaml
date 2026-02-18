@@ -67,3 +67,7 @@ outputs:
   ok:
     type: boolean
     description: Whether the Slack API response was successful
+
+  mode:
+    type: text
+    description: The delivery mode used (webhook or api)
