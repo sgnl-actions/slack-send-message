@@ -205,12 +205,12 @@ describe('Slack Send Message Script', () => {
     };
 
     test('should throw error if text is missing', async () => {
-        const params = {
-            channel: '#test'
-        };
+      const params = {
+        channel: '#test'
+      };
 
-        await expect(script.invoke(params, mockContext))
-            .rejects.toThrow('text parameter is required and cannot be empty');
+      await expect(script.invoke(params, mockContext))
+        .rejects.toThrow('text parameter is required and cannot be empty');
     });
 
     test('should throw error if text is empty', async () => {
@@ -234,14 +234,14 @@ describe('Slack Send Message Script', () => {
     });
 
     test('should throw error if channel is empty in API mode', async () => {
-        const params = {
-            text: 'Hello!',
-            channel: '',
-            isWebhook: false
-        };
+      const params = {
+        text: 'Hello!',
+        channel: '',
+        isWebhook: false
+      };
 
-        await expect(script.invoke(params, mockContext))
-            .rejects.toThrow('channel parameter is required for API mode');
+      await expect(script.invoke(params, mockContext))
+        .rejects.toThrow('channel parameter is required for API mode');
     });
   });
 
@@ -252,79 +252,79 @@ describe('Slack Send Message Script', () => {
     };
 
     test('should re-throw error for framework to handle', async () => {
-        const error = new Error('Network timeout');
-        error.statusCode = 500;
+      const error = new Error('Network timeout');
+      error.statusCode = 500;
 
-        const params = {
-            text: 'Hello!',
-            error: error
-        };
+      const params = {
+        text: 'Hello!',
+        error: error
+      };
 
-        await expect(script.error(params, mockContext)).rejects.toThrow('Network timeout');
+      await expect(script.error(params, mockContext)).rejects.toThrow('Network timeout');
     });
   });
 
   describe('halt handler', () => {
     test('should handle graceful shutdown', async () => {
-        const params = {
-            reason: 'timeout'
-        };
+      const params = {
+        reason: 'timeout'
+      };
 
-        const result = await script.halt(params, {});
+      const result = await script.halt(params, {});
 
-        expect(result.status).toBe('halted');
-        expect(result.reason).toBe('timeout');
-        expect(result.halted_at).toBeDefined();
+      expect(result.status).toBe('halted');
+      expect(result.reason).toBe('timeout');
+      expect(result.halted_at).toBeDefined();
     });
   });
 
   describe('Slack Send Message - API mode idempotency', () => {
-  const apiContext = {
-    environment: {
-      ADDRESS: 'https://slack.com'
-    },
-    secrets: {
-      BEARER_AUTH_TOKEN: 'xoxb-test-token-fake'
-    },
-    outputs: {}
-  };
-
-  test('should send the same message twice without errors', async () => {
-    const params = {
-      text: 'Idempotency test message',
-      channel: 'C1234567890',
-      isWebhook: false
+    const apiContext = {
+      environment: {
+        ADDRESS: 'https://slack.com'
+      },
+      secrets: {
+        BEARER_AUTH_TOKEN: 'xoxb-test-token-fake'
+      },
+      outputs: {}
     };
 
-    // Mock Slack API responses for both calls
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn().mockResolvedValue({
-        ok: true,
+    test('should send the same message twice without errors', async () => {
+      const params = {
+        text: 'Idempotency test message',
         channel: 'C1234567890',
-        ts: '1234567890.123456'
-      })
-    });
+        isWebhook: false
+      };
 
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn().mockResolvedValue({
+      // Mock Slack API responses for both calls
+      fetch.mockResolvedValueOnce({
         ok: true,
-        channel: 'C1234567890',
-        ts: '1234567890.123457'
-      })
+        status: 200,
+        json: jest.fn().mockResolvedValue({
+          ok: true,
+          channel: 'C1234567890',
+          ts: '1234567890.123456'
+        })
+      });
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn().mockResolvedValue({
+          ok: true,
+          channel: 'C1234567890',
+          ts: '1234567890.123457'
+        })
+      });
+
+      const result1 = await script.invoke(params, apiContext);
+      const result2 = await script.invoke(params, apiContext);
+
+      expect(result1.status).toBe('success');
+      expect(result2.status).toBe('success');
+      expect(result1.text).toBe(params.text);
+      expect(result2.text).toBe(params.text);
+      expect(result1.ts).not.toBe(result2.ts); // Both are new messages
     });
-
-    const result1 = await script.invoke(params, apiContext);
-    const result2 = await script.invoke(params, apiContext);
-
-    expect(result1.status).toBe('success');
-    expect(result2.status).toBe('success');
-    expect(result1.text).toBe(params.text);
-    expect(result2.text).toBe(params.text);
-    expect(result1.ts).not.toBe(result2.ts); // Both are new messages
   });
-});
 });

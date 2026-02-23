@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { beforeAll, afterAll, afterEach, describe, test, expect, jest } from '@jest/globals';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { request } from 'https';
 import script from '../src/script.mjs';
