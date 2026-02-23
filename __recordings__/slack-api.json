@@ -1,0 +1,191 @@
+{
+  "api-send-message": {
+    "status": 200,
+    "ok": true,
+    "statusText": "OK",
+    "body": {
+      "ok": true,
+      "channel": "C0AHEHT3SC8",
+      "ts": "1771881977.056619",
+      "message": {
+        "user": "U0AGZ7APZ17",
+        "type": "message",
+        "ts": "1771881977.056619",
+        "bot_id": "B0AG4S10CQP",
+        "app_id": "A0AHEJ4QT40",
+        "text": "Hello from record-replay test!",
+        "team": "T0AG4RT5B9V",
+        "bot_profile": {
+          "id": "B0AG4S10CQP",
+          "app_id": "A0AHEJ4QT40",
+          "user_id": "U0AGZ7APZ17",
+          "name": "dhanya-test-re-runnable",
+          "icons": {
+            "image_36": "https://a.slack-edge.com/80588/img/plugins/app/bot_36.png",
+            "image_48": "https://a.slack-edge.com/80588/img/plugins/app/bot_48.png",
+            "image_72": "https://a.slack-edge.com/80588/img/plugins/app/service_72.png"
+          },
+          "deleted": false,
+          "updated": 1771862092,
+          "team_id": "T0AG4RT5B9V"
+        },
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "Bmt",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "Hello from record-replay test!"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "warning": "missing_charset",
+      "response_metadata": {
+        "warnings": [
+          "missing_charset"
+        ]
+      }
+    }
+  },
+  "api-channel-not-found": {
+    "status": 200,
+    "ok": true,
+    "statusText": "OK",
+    "body": {
+      "ok": false,
+      "error": "channel_not_found",
+      "warning": "missing_charset",
+      "response_metadata": {
+        "warnings": [
+          "missing_charset"
+        ]
+      }
+    }
+  },
+  "webhook-send-message": {
+    "status": 200,
+    "ok": true,
+    "statusText": "OK",
+    "body": "ok"
+  },
+  "idempotency-call-1": {
+    "status": 200,
+    "ok": true,
+    "statusText": "OK",
+    "body": {
+      "ok": true,
+      "channel": "C0AHEHT3SC8",
+      "ts": "1771881977.815829",
+      "message": {
+        "user": "U0AGZ7APZ17",
+        "type": "message",
+        "ts": "1771881977.815829",
+        "bot_id": "B0AG4S10CQP",
+        "app_id": "A0AHEJ4QT40",
+        "text": "Idempotency test message",
+        "team": "T0AG4RT5B9V",
+        "bot_profile": {
+          "id": "B0AG4S10CQP",
+          "app_id": "A0AHEJ4QT40",
+          "user_id": "U0AGZ7APZ17",
+          "name": "dhanya-test-re-runnable",
+          "icons": {
+            "image_36": "https://a.slack-edge.com/80588/img/plugins/app/bot_36.png",
+            "image_48": "https://a.slack-edge.com/80588/img/plugins/app/bot_48.png",
+            "image_72": "https://a.slack-edge.com/80588/img/plugins/app/service_72.png"
+          },
+          "deleted": false,
+          "updated": 1771862092,
+          "team_id": "T0AG4RT5B9V"
+        },
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "ywOU",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "Idempotency test message"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "warning": "missing_charset",
+      "response_metadata": {
+        "warnings": [
+          "missing_charset"
+        ]
+      }
+    }
+  },
+  "idempotency-call-2": {
+    "status": 200,
+    "ok": true,
+    "statusText": "OK",
+    "body": {
+      "ok": true,
+      "channel": "C0AHEHT3SC8",
+      "ts": "1771881978.045129",
+      "message": {
+        "user": "U0AGZ7APZ17",
+        "type": "message",
+        "ts": "1771881978.045129",
+        "bot_id": "B0AG4S10CQP",
+        "app_id": "A0AHEJ4QT40",
+        "text": "Idempotency test message",
+        "team": "T0AG4RT5B9V",
+        "bot_profile": {
+          "id": "B0AG4S10CQP",
+          "app_id": "A0AHEJ4QT40",
+          "user_id": "U0AGZ7APZ17",
+          "name": "dhanya-test-re-runnable",
+          "icons": {
+            "image_36": "https://a.slack-edge.com/80588/img/plugins/app/bot_36.png",
+            "image_48": "https://a.slack-edge.com/80588/img/plugins/app/bot_48.png",
+            "image_72": "https://a.slack-edge.com/80588/img/plugins/app/service_72.png"
+          },
+          "deleted": false,
+          "updated": 1771862092,
+          "team_id": "T0AG4RT5B9V"
+        },
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "g0zS",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "Idempotency test message"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "warning": "missing_charset",
+      "response_metadata": {
+        "warnings": [
+          "missing_charset"
+        ]
+      }
+    }
+  }
+}
