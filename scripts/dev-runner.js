@@ -5,29 +5,61 @@
  */
 
 import script from '../src/script.mjs';
+import fs from 'fs';
+import path from 'path';
+import yaml from 'js-yaml';
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 
-
-// Parse command line arguments for --params and --secrets
-function parseArg(flag) {
-  const idx = process.argv.findIndex(arg => arg.startsWith(flag));
-  if (idx !== -1) {
-    let val = process.argv[idx];
-    // Handle --flag=value or --flag value
-    if (val.includes('=')) {
-      val = val.split('=')[1];
-    } else if (process.argv[idx + 1]) {
-      val = process.argv[idx + 1];
-    }
-    return val;
-  }
-  return null;
+// Load and parse metadata.yaml.
+const metadataPath = path.resolve(process.cwd(), 'metadata.yaml');
+let metadata = {};
+if (fs.existsSync(metadataPath)) {
+  metadata = yaml.load(fs.readFileSync(metadataPath, 'utf8'));
 }
 
-const paramsArg = parseArg('--params');
-const secretsArg = parseArg('--secrets');
+// Extract input defaults from metadata.yaml.
+function getInputDefaults(meta) {
+  const defaults = {};
+  if (meta.inputs) {
+    for (const [key, val] of Object.entries(meta.inputs)) {
+      if (val.default !== undefined) defaults[key] = val.default;
+    }
+  }
+  return defaults;
+}
 
-const params = paramsArg ? JSON.parse(paramsArg) : {};
-const secrets = secretsArg ? JSON.parse(secretsArg) : {};
+const inputDefaults = getInputDefaults(metadata);
+
+// Use yargs for argument parsing.
+const argv = yargs(hideBin(process.argv))
+  .option('params', {
+    type: 'string',
+    describe: 'JSON string of parameters to pass to the script',
+    default: '{}'
+  })
+  .option('secrets', {
+    type: 'string',
+    describe: 'JSON string of secrets to pass to the script',
+    default: '{}'
+  })
+  .help()
+  .argv;
+
+let params = {};
+let secrets = {};
+try {
+  params = Object.assign({}, inputDefaults, argv.params ? JSON.parse(argv.params) : {});
+} catch (e) {
+  console.error('Failed to parse --params as JSON:', e.message);
+  process.exit(1);
+}
+try {
+  secrets = argv.secrets ? JSON.parse(argv.secrets) : {};
+} catch (e) {
+  console.error('Failed to parse --secrets as JSON:', e.message);
+  process.exit(1);
+}
 
 const context = {
   environment: {
