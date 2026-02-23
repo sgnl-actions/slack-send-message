@@ -58,7 +58,7 @@ async function runDev() {
     if (script.error) {
       console.log('\n🔄 Attempting error recovery...');
       try {
-        const recovery = await script.error({...params, error}, context);
+        const recovery = await script.error({ ...params, error }, context);
         console.log('✅ Recovery successful!');
         console.log('📤 Recovery result:', JSON.stringify(recovery, null, 2));
       } catch (recoveryError) {
