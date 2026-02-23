@@ -42,11 +42,10 @@ const context = {
 
 async function runDev() {
   console.log('🚀 Running job script in development mode...\n');
-  
   console.log('📋 Parameters:', JSON.stringify(params, null, 2));
   console.log('🔧 Context:', JSON.stringify(context, null, 2));
   console.log('\n' + '='.repeat(50) + '\n');
-  
+
   try {
     const result = await script.invoke(params, context);
     console.log('\n' + '='.repeat(50));
@@ -55,7 +54,7 @@ async function runDev() {
   } catch (error) {
     console.log('\n' + '='.repeat(50));
     console.error('❌ Job failed:', error.message);
-    
+
     if (script.error) {
       console.log('\n🔄 Attempting error recovery...');
       try {

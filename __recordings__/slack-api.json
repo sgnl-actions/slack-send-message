@@ -6,11 +6,11 @@
     "body": {
       "ok": true,
       "channel": "C0AHEHT3SC8",
-      "ts": "1771881977.056619",
+      "ts": "1771882463.166589",
       "message": {
         "user": "U0AGZ7APZ17",
         "type": "message",
-        "ts": "1771881977.056619",
+        "ts": "1771882463.166589",
         "bot_id": "B0AG4S10CQP",
         "app_id": "A0AHEJ4QT40",
         "text": "Hello from record-replay test!",
@@ -32,7 +32,7 @@
         "blocks": [
           {
             "type": "rich_text",
-            "block_id": "Bmt",
+            "block_id": "3GC+f",
             "elements": [
               {
                 "type": "rich_text_section",
@@ -83,11 +83,11 @@
     "body": {
       "ok": true,
       "channel": "C0AHEHT3SC8",
-      "ts": "1771881977.815829",
+      "ts": "1771882463.855419",
       "message": {
         "user": "U0AGZ7APZ17",
         "type": "message",
-        "ts": "1771881977.815829",
+        "ts": "1771882463.855419",
         "bot_id": "B0AG4S10CQP",
         "app_id": "A0AHEJ4QT40",
         "text": "Idempotency test message",
@@ -109,7 +109,7 @@
         "blocks": [
           {
             "type": "rich_text",
-            "block_id": "ywOU",
+            "block_id": "paAWI",
             "elements": [
               {
                 "type": "rich_text_section",
@@ -139,11 +139,11 @@
     "body": {
       "ok": true,
       "channel": "C0AHEHT3SC8",
-      "ts": "1771881978.045129",
+      "ts": "1771882464.074779",
       "message": {
         "user": "U0AGZ7APZ17",
         "type": "message",
-        "ts": "1771881978.045129",
+        "ts": "1771882464.074779",
         "bot_id": "B0AG4S10CQP",
         "app_id": "A0AHEJ4QT40",
         "text": "Idempotency test message",
@@ -165,7 +165,7 @@
         "blocks": [
           {
             "type": "rich_text",
-            "block_id": "g0zS",
+            "block_id": "8F1",
             "elements": [
               {
                 "type": "rich_text_section",

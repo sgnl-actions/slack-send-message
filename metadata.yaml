@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/sgnl-actions/schemas/main/metadata.schema.json
 name: slack-send-message
 description: Send a message to a Slack channel via API or webhook
 
@@ -66,3 +67,7 @@ outputs:
   ok:
     type: boolean
     description: Whether the Slack API response was successful
+
+  mode:
+    type: text
+    description: The delivery mode used (webhook or api)
