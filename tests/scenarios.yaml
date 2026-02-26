@@ -1,0 +1,115 @@
+# Slack Send Message Test Scenarios
+action:
+  params:
+    text: Hello from record-replay test!
+    channel: C0TESTCHAN
+    isWebhook: false
+  context:
+    secrets:
+      BEARER_AUTH_TOKEN: xoxb-test-token
+    environment:
+      ADDRESS: https://slack.com
+
+scenarios:
+
+  # ── API mode: success ─────────────────────────────────────────────────────
+
+  - name: successfully send message via API
+    steps:
+      - request:
+          method: POST
+          url: https://slack.com/api/chat.postMessage
+        fixture: fixtures/200-message-sent-api.http
+    invoke:
+      returns:
+        status: success
+        text: Hello from record-replay test!
+        channel: C0TESTCHAN
+        ts: "1771883297.738399"
+        ok: true
+        mode: api
+
+  - name: idempotent - second API send also succeeds
+    steps:
+      - request:
+          method: POST
+          url: https://slack.com/api/chat.postMessage
+        fixture: fixtures/200-message-sent-api.http
+    invoke:
+      returns:
+        status: success
+        ok: true
+        mode: api
+
+  # ── API mode: failures ────────────────────────────────────────────────────
+
+  - name: channel not found
+    steps:
+      - request:
+          method: POST
+          url: https://slack.com/api/chat.postMessage
+        fixture: fixtures/200-channel-not-found.http
+    invoke:
+      throws: "Slack API error: channel_not_found"
+
+  # ── API mode: input validation ────────────────────────────────────────────
+
+  - name: missing text
+    params:
+      text: ~
+    steps: []
+    invoke:
+      throws: "text parameter is required and cannot be empty"
+
+  - name: missing channel in API mode
+    params:
+      channel: ~
+    steps: []
+    invoke:
+      throws: "channel parameter is required for API mode"
+
+  - name: missing auth token in API mode
+    context:
+      secrets:
+        BEARER_AUTH_TOKEN: ~
+    steps: []
+    invoke:
+      throws: "No authentication configured"
+
+  # ── webhook mode: success ─────────────────────────────────────────────────
+
+  - name: successfully send message via webhook
+    params:
+      text: Hello from webhook!
+      channel: ~
+      isWebhook: true
+    context:
+      secrets: {}
+      environment:
+        ADDRESS: https://hooks.slack.com/services/T0TESTTEAM/B0TESTBOT/TESTTOKEN
+    steps:
+      - request:
+          method: POST
+          url: https://hooks.slack.com/services/T0TESTTEAM/B0TESTBOT/TESTTOKEN
+        fixture: fixtures/200-message-sent-webhook.http
+    invoke:
+      returns:
+        status: success
+        text: Hello from webhook!
+        ok: true
+        mode: webhook
+
+  # ── webhook mode: input validation ───────────────────────────────────────
+
+  - name: missing webhook URL
+    params:
+      text: Hello!
+      channel: ~
+      isWebhook: true
+    context:
+      secrets: {}
+      environment:
+        ADDRESS: ~
+    steps: []
+    invoke:
+      throws: "No URL specified"

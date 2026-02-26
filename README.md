@@ -126,7 +126,7 @@ npm run lint
 npm run build
 
 # Test locally with parameters
-npm run dev -- --params '{"text":"Test message","isWebhook":true}'
+npm run dev -- --params '{"text":"Test message","isWebhook":true}' --secrets='{"BEARER_AUTH_TOKEN":"xoxb...."}'
 ```
 
 ### Testing Different Modes
