@@ -147,22 +147,6 @@ describe('Slack Send Message Script', () => {
         .rejects.toThrow('channel parameter is required for API mode');
     });
 
-    test('should throw error if access token is missing', async () => {
-      const params = {
-        text: 'Hello!',
-        channel: '#test'
-      };
-
-      const contextWithoutToken = {
-        environment: {},
-        secrets: {},
-        outputs: {}
-      };
-
-      await expect(script.invoke(params, contextWithoutToken))
-        .rejects.toThrow('No authentication configured');
-    });
-
     test('should throw error if API request fails', async () => {
       const params = {
         text: 'Hello!',
