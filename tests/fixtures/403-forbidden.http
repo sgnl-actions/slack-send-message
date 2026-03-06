@@ -1,0 +1,13 @@
+HTTP/2 403 
+date: Thu, 26 Feb 2026 19:50:25 GMT
+server: Apache
+vary: Accept-Encoding
+x-slack-req-id: forbidden-123456789
+x-content-type-options: nosniff
+content-type: application/json; charset=utf-8
+access-control-expose-headers: x-slack-req-id, retry-after
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+referrer-policy: no-referrer
+access-control-allow-origin: *
+
+{"error":"missing_scope","needed":"chat:write","provided":"identify,incoming-webhook","ok":false}

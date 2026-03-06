@@ -52,6 +52,42 @@ scenarios:
     invoke:
       throws: "Slack API error: channel_not_found"
 
+  - name: invalid auth token
+    steps:
+      - request:
+          method: POST
+          url: https://slack.com/api/chat.postMessage
+        fixture: fixtures/200-invalid-auth.http
+    invoke:
+      throws: "Slack API error: invalid_auth"
+
+  - name: malformed JSON payload
+    steps:
+      - request:
+          method: POST
+          url: https://slack.com/api/chat.postMessage
+        fixture: fixtures/200-invalid-json.http
+    invoke:
+      throws: "Slack API error: invalid_json"
+
+  - name: invalid form data (missing Content-Type)
+    steps:
+      - request:
+          method: POST
+          url: https://slack.com/api/chat.postMessage
+        fixture: fixtures/200-invalid-form-data.http
+    invoke:
+      throws: "Slack API error: invalid_form_data"
+
+  - name: insufficient permissions (403)
+    steps:
+      - request:
+          method: POST
+          url: https://slack.com/api/chat.postMessage
+        fixture: fixtures/403-forbidden.http
+    invoke:
+      throws: "Slack API request failed: 403 Forbidden"
+
   # ── API mode: input validation ────────────────────────────────────────────
 
   - name: missing text
@@ -86,11 +122,11 @@ scenarios:
     context:
       secrets: {}
       environment:
-        ADDRESS: https://hooks.slack.com/services/T0TESTTEAM/B0TESTBOT/TESTTOKEN
+        ADDRESS: https://hooks.example.com/services/T0TESTTEAM/B0TESTBOT/TESTTOKEN
     steps:
       - request:
           method: POST
-          url: https://hooks.slack.com/services/T0TESTTEAM/B0TESTBOT/TESTTOKEN
+          url: https://hooks.example.com/services/T0TESTTEAM/B0TESTBOT/TESTTOKEN
         fixture: fixtures/200-message-sent-webhook.http
     invoke:
       returns:
@@ -98,6 +134,59 @@ scenarios:
         text: Hello from webhook!
         ok: true
         mode: webhook
+
+  # ── webhook mode: failures ───────────────────────────────────────────────
+
+  - name: webhook bad request (400)
+    params:
+      text: Hello from webhook!
+      channel: ~
+      isWebhook: true
+    context:
+      secrets: {}
+      environment:
+        ADDRESS: https://hooks.example.com/services/T0TESTTEAM/B0TESTBOT/TESTTOKEN
+    steps:
+      - request:
+          method: POST
+          url: https://hooks.example.com/services/T0TESTTEAM/B0TESTBOT/TESTTOKEN
+        fixture: fixtures/400-webhook-bad-request.http
+    invoke:
+      throws: "Webhook request failed: 400 Bad Request"
+
+  - name: webhook invalid token (403)
+    params:
+      text: Hello from webhook!
+      channel: ~
+      isWebhook: true
+    context:
+      secrets: {}
+      environment:
+        ADDRESS: https://hooks.example.com/services/T0TESTTEAM/B0TESTBOT/INVALIDTOKEN
+    steps:
+      - request:
+          method: POST
+          url: https://hooks.example.com/services/T0TESTTEAM/B0TESTBOT/INVALIDTOKEN
+        fixture: fixtures/403-invalid-webhook-token.http
+    invoke:
+      throws: "Webhook request failed: 403 Forbidden"
+
+  - name: webhook not found (404)
+    params:
+      text: Hello from webhook!
+      channel: ~
+      isWebhook: true
+    context:
+      secrets: {}
+      environment:
+        ADDRESS: https://hooks.example.com/services/T0TESTTEAM/B0TESTBOT/INVALIDTOKEN
+    steps:
+      - request:
+          method: POST
+          url: https://hooks.example.com/services/T0TESTTEAM/B0TESTBOT/INVALIDTOKEN
+        fixture: fixtures/404-webhook-not-found.http
+    invoke:
+      throws: "Webhook request failed: 404 Not Found"
 
   # ── webhook mode: input validation ───────────────────────────────────────
 
