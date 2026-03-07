@@ -1,0 +1,24 @@
+HTTP/2 404 
+date: Fri, 06 Mar 2026 23:40:30 GMT
+server: Apache
+vary: Accept-Encoding
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+referrer-policy: no-referrer
+x-slack-unique-id: aatl7jPhUM3IshXrENjqSwAAEBc
+x-slack-backend: r
+access-control-allow-origin: *
+x-frame-options: SAMEORIGIN
+content-type: text/html
+content-length: 7
+via: 1.1 slack-prod.tinyspeck.com, envoy-www-iad-shlropff,envoy-edge-pdx-ttfkmoc
+x-envoy-attempt-count: 1
+x-envoy-upstream-service-time: 60
+x-backend: main_normal
+x-server: slack-www-hhvm-main-iad-gd5c4q4fvleh
+x-slack-shared-secret-outcome: no-match
+x-edge-backend: envoy-www
+timing-allow-origin: *
+alt-svc: h3=":443"; ma=2592000, h3-29=":443"; ma=2592000, quic=":443"; ma=2592000
+x-slack-edge-shared-secret-outcome: no-match
+
+no_team

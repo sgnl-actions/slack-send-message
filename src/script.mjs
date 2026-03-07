@@ -133,6 +133,12 @@ export default {
       }
 
       const authHeader = await getAuthorizationHeader(context);
+
+      // Validate authentication is configured for API mode
+      if (!authHeader || authHeader.trim().length === 0) {
+        throw new Error('No authentication configured. API mode requires bearer token or OAuth2 access token');
+      }
+
       const apiUrl = getBaseURL(params, context);
 
       const result = await sendMessageViaAPI(text, channel, authHeader, apiUrl);
