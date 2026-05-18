@@ -43,5 +43,8 @@
     "js-yaml": "^4.1.0",
     "node-fetch": "^2.7.0",
     "rollup": "^4.60.4"
+  },
+  "overrides": {
+    "serialize-javascript": ">=7.0.5"
   }
 }
