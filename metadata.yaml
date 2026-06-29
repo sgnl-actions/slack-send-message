@@ -24,7 +24,6 @@ inputs:
     type: boolean
     description: Use webhook mode instead of API mode
     required: false
-    default: false
 
   address:
     type: text
@@ -51,7 +50,6 @@ environment:
   ADDRESS:
     type: text
     description: Base URL for Slack API (API mode) or webhook URL (webhook mode)
-    default: https://slack.com
 
 requires_one_of:
   - ["secrets.BEARER_AUTH_TOKEN"]
